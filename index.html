@@ -33,11 +33,9 @@
             .then(csvText => {
                 const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
 
-                // 数値に変換してフィルタ
                 let filtered = data.filter(row => row['TotalScore'] && !isNaN(row['TotalScore']));
                 filtered.forEach(row => row['TotalScore'] = parseFloat(row['TotalScore']));
 
-                // StudentIdごとに最高点を残す
                 let bestScores = {};
                 filtered.forEach(row => {
                     const id = row['StudentId'];
@@ -46,11 +44,9 @@
                     }
                 });
 
-                // 配列に戻して点数順にソート
                 let uniqueData = Object.values(bestScores);
                 uniqueData.sort((a, b) => b['TotalScore'] - a['TotalScore']);
 
-                // ランキング表示（同点対応）
                 let tableBody = document.querySelector('#rankingTable tbody');
                 let rank = 1;       
                 let prevScore = null;  
