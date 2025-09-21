@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ランキング表示</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { background-color: #000; color: #fff; }
+        table { border-collapse: collapse; width: 60%; margin: 20px auto; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #333; }
+        .rank-1 { color: gold; font-weight: bold; }
+        .rank-2 { color: silver; font-weight: bold; }
+        .rank-3 { color: #d87b5f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center">ランキング表示</h2>
+    <table id="rankingTable">
+        <thead>
+            <tr><th>順位</th><th>ID</th><th>名前</th><th>点数</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const SHEET_ID = '16PFWfElWUfN3x7iV4fSOnw0y3IdQBtrJIVzg6yOmLoU';
+        const SHEET_GID = '1876521549';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+
+        fetch(CSV_URL)
+            .then(response => response.text())
+            .then(csvText => {
+                const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+
+                // 数値に変換してフィルタ
+                let filtered = data.filter(row => row['TotalScore'] && !isNaN(row['TotalScore']));
+                filtered.forEach(row => row['TotalScore'] = parseFloat(row['TotalScore']));
+
+                // StudentIdごとに最高点を残す
+                let bestScores = {};
+                filtered.forEach(row => {
+                    const id = row['StudentId'];
+                    if (!bestScores[id] || row['TotalScore'] > bestScores[id]['TotalScore']) {
+                        bestScores[id] = row;
+                    }
+                });
+
+                // 配列に戻して点数順にソート
+                let uniqueData = Object.values(bestScores);
+                uniqueData.sort((a, b) => b['TotalScore'] - a['TotalScore']);
+
+                // ランキング表示（同点対応）
+                let tableBody = document.querySelector('#rankingTable tbody');
+                let rank = 1;       
+                let prevScore = null;  
+                let sameRankCount = 0;  
+
+                uniqueData.forEach((row, index) => {
+                    if (row['TotalScore'] === prevScore) {
+                        sameRankCount++;
+                    } else {
+                        rank = rank + sameRankCount; 
+                        sameRankCount = 1; 
+                    }
+
+                    prevScore = row['TotalScore'];
+
+                    let rankClass = rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : rank === 3 ? "rank-3" : "";
+                    let tr = document.createElement('tr');
+                    tr.className = rankClass;
+                    tr.innerHTML = `<td>${rank}</td><td>${row['StudentId']}</td><td>${row['StudentName']}</td><td>${row['TotalScore']}</td>`;
+                    tableBody.appendChild(tr);
+                });
+            });
+    </script>
+</body>
+</html>
